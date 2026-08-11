@@ -5,6 +5,27 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-08-11
+
+### Changed
+- **Visual redesign: 1950s baseball annual.** The previous pass was clean to the
+  point of clinical — one flat neutral, an identical black header on every panel,
+  no colour, no texture, no ornament. Uniformity is what reads as machine-made.
+  - Cream stock with an SVG grain texture over every surface (screen-blended in
+    dark mode so it still reads as texture rather than dirt).
+  - Two spot inks — scorecard red and outfield green — over warm black `#231d15`.
+  - A proper nameplate: drawn baseball with stitching, display-serif wordmark,
+    standfirst, double rule.
+  - Stitch rules (hairlines with slanted red dashes) dividing major sections.
+  - Drop caps opening each lesson; pull-quote treatment for key ideas.
+  - Larger, more confident numerals; headline sizes that jump rather than step;
+    module numbers set as large display figures.
+
+### Added
+- `scripts/check-css.py` — brace balance, undefined `var()` references,
+  malformed colour values, and coverage of every class the JavaScript emits.
+  Verified by deliberately breaking a variable and confirming it is caught.
+
 ## [1.3.1] - 2026-08-11
 
 ### Fixed

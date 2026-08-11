@@ -163,6 +163,7 @@ engine that ships with macOS (via `osascript`).
 python3 scripts/run-tests.py           # 88 formula and tier checks against real published seasons
 python3 scripts/smoke-test.py          # curriculum integrity + every calculator runs
 python3 scripts/check-live-pipeline.py # fetches real MLB data and checks the distributions
+python3 scripts/check-css.py           # stylesheet structure and class coverage
 ```
 
 You can also open <http://localhost:8000/tests.html> in a browser for the same
@@ -290,11 +291,34 @@ because rate stats on tiny samples are noise.
 
 ## Design
 
-The look is deliberately a **printed statistical annual**, not a web app: square
-corners, hairline rules instead of drop shadows, a serif for reading, a sans for
-furniture, and monospace for every number so columns align. The palette is
-newsprint — warm paper, black ink, one scorecard red. Dark mode inverts the paper
-rather than restyling it.
+The look is a **1950s baseball annual**, not a web app.
+
+Uniformity is what makes a page read as machine-made, so the design deliberately
+breaks it up: headline sizes jump rather than step, panels vary, and there is
+ornament that serves no function except pleasure.
+
+- **Cream stock with visible grain** — an SVG turbulence texture at 5% opacity
+  over every surface. You feel it more than see it, and it is what stops large
+  flat areas looking like a screen.
+- **Two spot inks over warm black** — scorecard red and outfield green, as an
+  annual would actually have been printed. The ink is `#231d15`, never `#000`.
+- **A nameplate**, not a logo bar: drawn baseball with stitching, wordmark in a
+  display serif, standfirst beneath, double rule under the whole thing.
+- **Stitch rules** between sections — two hairlines with slanted red dashes, the
+  seam of a baseball.
+- **Drop caps** opening every lesson, and **pull quotes** set large across the
+  measure for the key idea.
+- **Numerals set confidently** — the calculator result is 2.9rem of monospace in
+  red, because the number is the point of the page.
+
+Dark mode inverts the stock rather than restyling it, and flips the grain from
+multiply to screen so it still reads as texture.
+
+`scripts/check-css.py` guards the stylesheet: balanced braces, no `var()`
+pointing at an undefined property, no malformed colour values, and every class
+the JavaScript emits has a matching rule. That last check is the important one —
+renaming a class in the CSS but not the JS produces an unstyled page rather than
+an error.
 
 ---
 

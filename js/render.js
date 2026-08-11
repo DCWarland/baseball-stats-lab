@@ -63,6 +63,8 @@ export function renderStat(stat, mount) {
       ${stat.gotcha ? `<aside class="gotcha"><h3>Common mistake</h3><p>${esc(stat.gotcha)}</p></aside>` : ''}
       ${stat.note ? `<aside class="note"><p>${esc(stat.note)}</p></aside>` : ''}
 
+      <div class="stitch" aria-hidden="true"></div>
+
       <div id="calc-slot"></div>
       <div id="dist-slot"></div>
       <div id="widget-slot"></div>
