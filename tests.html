@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Baseball Stats Lab — formula tests</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main class="main" style="max-width:52rem">
+  <h1>Formula tests</h1>
+  <p class="lede">Checks every formula against known, published season lines. Open this after changing anything in <code>js/formulas.js</code>.</p>
+  <div id="summary"></div>
+  <div id="results"></div>
+</main>
+
+<script type="module">
+/*
+ * A deliberately tiny test harness. Each case states an expected value and a
+ * tolerance, because floating-point maths rarely lands on an exact number.
+ *
+ * The reference lines are real published seasons, so if a formula drifts the
+ * failure is meaningful rather than a self-referential check.
+ */
+import * as F from './js/formulas.js';
+import { fipConstant } from './js/formulas.js';
+
+const results = [];
+const near = (a, b, tol) => a != null && Math.abs(a - b) <= tol;
+
+function check(name, actual, expected, tol = 0.001, note = '') {
+  results.push({ name, actual, expected, tol, note, pass: near(actual, expected, tol) });
+}
+
+/* Barry Bonds, 2001 — the most extreme offensive season on record. */
+const bonds = {
+  AB: 476, H: 156, doubles: 32, triples: 2, HR: 73, BB: 177, IBB: 35,
+  HBP: 9, SF: 2, SH: 0, K: 93, PA: 664, SB: 13, CS: 3,
+};
+
+check('Bonds 2001 AVG', F.avg(bonds), 0.328, 0.0006);
+check('Bonds 2001 OBP', F.obp(bonds), 0.515, 0.0006);
+check('Bonds 2001 SLG', F.slg(bonds), 0.863, 0.0006);
+check('Bonds 2001 OPS', F.ops(bonds), 1.379, 0.0012);
+check('Bonds 2001 ISO', F.iso(bonds), 0.536, 0.0012);
+check('Bonds 2001 singles', F.singles(bonds), 49, 0);
+check('Bonds 2001 total bases', F.totalBases(bonds), 411, 0);
+check('Bonds 2001 PA from parts', F.plateAppearances(bonds), 664, 0);
+check('Bonds 2001 wOBA (2001 weights)', F.woba(bonds, 2001), 0.537, 0.006, 'FanGraphs lists .537');
+check('Bonds 2001 BB%', F.bbPct(bonds), 26.66, 0.05);
+check('Bonds 2001 K%', F.kPct(bonds), 14.01, 0.05);
+check('Bonds 2001 AB/HR', F.abPerHr(bonds), 6.52, 0.01);
+
+/* Aaron Judge, 2022 — 62 home runs. */
+const judge = {
+  AB: 570, H: 177, doubles: 28, triples: 0, HR: 62, BB: 111, IBB: 19,
+  HBP: 5, SF: 5, SH: 0, K: 175, PA: 696,
+};
+check('Judge 2022 AVG', F.avg(judge), 0.311, 0.0006);
+check('Judge 2022 OBP', F.obp(judge), 0.425, 0.0011);
+check('Judge 2022 SLG', F.slg(judge), 0.686, 0.0011);
+check('Judge 2022 wOBA (2022 weights)', F.woba(judge, 2022), 0.458, 0.008);
+
+/* Jacob deGrom, 2018 — 1.70 ERA, Cy Young with a 10-9 record. */
+const degrom = { ER: 41, R: 48, IP: 217, H: 152, BB: 46, HBP: 5, K: 269, HR: 10, BF: 835, W: 10, L: 9 };
+check('deGrom 2018 ERA', F.era(degrom), 1.70, 0.006);
+check('deGrom 2018 WHIP', F.whip(degrom), 0.912, 0.002);
+check('deGrom 2018 K/9', F.kPer9(degrom), 11.16, 0.02);
+check('deGrom 2018 BB/9', F.bbPer9(degrom), 1.91, 0.02);
+check('deGrom 2018 K-BB%', F.kMinusBbPct(degrom), 26.71, 0.05);
+check('deGrom 2018 FIP (cFIP 3.16)', F.fip(degrom, 3.16), 1.99, 0.03, 'FanGraphs lists 1.99');
+check('deGrom 2018 win%', F.winPct(degrom), 0.526, 0.002);
+
+/* Innings-pitched notation — the classic source of bugs. */
+check('6.1 IP is 19 outs', F.ipToOuts(6.1), 19, 0);
+check('5.2 IP is 17 outs', F.ipToOuts(5.2), 17, 0);
+check('6.2 + 2.2 IP = 9.1 IP', F.outsToIp(F.ipToOuts(6.2) + F.ipToOuts(2.2)), 9.1, 0.001);
+check('6.1 IP as decimal innings', F.ipDecimal(6.1), 6.3333, 0.001);
+check('217 IP as decimal innings', F.ipDecimal(217), 217, 0.001);
+
+/* Run expectancy and RE24. */
+check('RE bases empty 0 out', F.runExpectancy('___', 0), 0.481, 0.0001);
+check('RE bases loaded 0 out', F.runExpectancy('123', 0), 2.292, 0.0001);
+check('RE24 leadoff walk', F.re24('___', 0, '1__', 0, 0), 0.378, 0.0001);
+check('RE24 strikeout, runner on 2nd, 0 out', F.re24('_2_', 0, '_2_', 1, 0), -0.436, 0.0001);
+check('RE24 grand slam (bases loaded, 0 out)', F.re24('123', 0, '___', 0, 4), 2.189, 0.0001);
+check('RE24 inning-ending double play', F.re24('1__', 2, '___', 3, 0), -0.224, 0.0001);
+
+/* Pythagorean and team-level. */
+check('Pythagorean 750 RS / 680 RA', F.pythagoreanWins({ RS: 750, RA: 680, G: 162 }), 88.2, 0.3);
+check('Pythagorean win% is symmetric at equal runs', F.pythagoreanWinPct({ RS: 700, RA: 700 }), 0.5, 0.0001);
+check('PythagenPat exponent in a normal environment', F.pythagenpatExponent({ RS: 750, RA: 680, G: 162 }), 1.85, 0.06);
+check('Runs per win at 9 R/G total', F.runsPerWin({ RS: 729, RA: 729, G: 162 }), 10.0, 0.05);
+
+/* Baserunning. */
+check('Steal break-even rate', F.stealBreakEven(0.2, 0.41) * 100, 67.2, 0.2);
+check('SB% 30 for 36', F.sbPct({ SB: 30, CS: 6 }), 83.33, 0.02);
+
+/* Fielding. */
+check('Fielding pct', F.fieldingPct({ PO: 180, A: 420, E: 12 }), 0.980, 0.0006);
+check('Range factor per 9', F.rangeFactor9({ PO: 180, A: 420, INN: 1300 }), 4.154, 0.002);
+check('CS%', F.csPct({ CS: 25, SB: 75 }), 25, 0.01);
+check('OAA to runs', F.oaaToRuns({ OAA: 12 }), 9, 0.001);
+
+/* FIP constant derivation — should land near the published ~3.1. */
+const lgPitch = { ER: 19500, IP: 43000, HR: 5400, BB: 15500, HBP: 2100, K: 41000 };
+check('Derived FIP constant is plausible', fipConstant(lgPitch), 3.15, 0.55, 'sanity band, not an exact target');
+
+/* Scaling and WAR. */
+check('ERA- for 3.60 in a 4.15 league', F.eraMinus(3.60, 4.15, 100), 86.7, 0.2);
+check('ERA- park adjusts upward at Coors', F.eraMinus(3.60, 4.15, 112), 77.5, 0.3);
+check('RAR from WAR', F.rar(5), 50, 0.001);
+check('Replacement-level hitter is near 0 WAR',
+  F.warBatting({ battingRuns: -20, baserunningRuns: 0, fieldingRuns: 0, position: 'LF', PA: 600 }), 0.0, 0.9);
+check('Elite SS WAR is in the All-Star band',
+  F.warBatting({ battingRuns: 45, baserunningRuns: 3, fieldingRuns: 8, position: 'SS', PA: 650 }), 8.0, 1.5);
+check('Pitcher WAR for a 3.00 FIP over 200 IP',
+  F.warPitching({ IP: 200, playerFip: 3.0, lgFip: 4.15, role: 'SP' }), 5.3, 1.2);
+
+/* Speed Score and BaseRuns. */
+const burner = { AB: 550, H: 160, doubles: 25, triples: 12, HR: 8, BB: 55, HBP: 4,
+                 SF: 3, K: 95, R: 100, SB: 45, CS: 8, GIDP: 3, PA: 615 };
+const plodder = { AB: 550, H: 145, doubles: 30, triples: 0, HR: 32, BB: 60, HBP: 6,
+                  SF: 5, K: 150, R: 70, SB: 0, CS: 1, GIDP: 22, PA: 625 };
+check('Speed Score is on the 0-10 scale', F.speedScore(burner) >= 0 && F.speedScore(burner) <= 10 ? 1 : 0, 1, 0);
+check('Speed Score separates burner from plodder', F.speedScore(burner) - F.speedScore(plodder) > 2 ? 1 : 0, 1, 0);
+check('Speed Score copes with a player who never ran',
+  F.speedScore({ AB: 400, H: 100, doubles: 20, triples: 0, HR: 15, BB: 40, HBP: 2, SF: 3,
+                 K: 90, R: 45, SB: 0, CS: 0, GIDP: 12, PA: 445 }) !== null ? 1 : 0, 1, 0);
+const teamLine = { AB: 5500, H: 1400, doubles: 280, triples: 25, HR: 190,
+                   BB: 500, HBP: 60, SF: 40, K: 1350, PA: 6150 };
+check('BaseRuns lands in a plausible team range', F.baseRuns(teamLine), 755, 90);
+check('BaseRuns rises with home runs',
+  F.baseRuns({ ...teamLine, HR: 260 }) - F.baseRuns(teamLine) > 40 ? 1 : 0, 1, 0);
+
+/* Formatting. */
+check('fmt drops the leading zero', F.fmt(0.328, 'rate3') === '.328' ? 1 : 0, 1, 0);
+check('fmt handles null', F.fmt(null, 'rate3') === '—' ? 1 : 0, 1, 0);
+check('fmt negative rate keeps the sign', F.fmt(-0.05, 'rate3') === '-.050' ? 1 : 0, 1, 0);
+check('fmt runs adds a plus', F.fmt(45.2, 'runs') === '+45.2' ? 1 : 0, 1, 0);
+
+/* Division-by-zero safety — these must return null, never NaN or Infinity. */
+check('AVG with 0 AB returns null', F.avg({ H: 0, AB: 0 }) === null ? 1 : 0, 1, 0);
+check('ERA with 0 IP returns null', F.era({ ER: 0, IP: 0 }) === null ? 1 : 0, 1, 0);
+check('BB/K with 0 K returns null', F.bbPerK({ BB: 10, K: 0 }) === null ? 1 : 0, 1, 0);
+
+/* ------------------------------------------------------------------ report */
+const passed = results.filter((r) => r.pass).length;
+const failed = results.length - passed;
+
+document.getElementById('summary').innerHTML = `
+  <div class="calc" style="margin-top:1rem">
+    <div class="stat-tiles">
+      <div class="tile${failed ? '' : ' accent'}"><span class="tile-label">Passed</span><span class="tile-value">${passed}</span></div>
+      <div class="tile"><span class="tile-label">Failed</span><span class="tile-value" style="color:${failed ? 'var(--bad)' : 'inherit'}">${failed}</span></div>
+      <div class="tile"><span class="tile-label">Total</span><span class="tile-value">${results.length}</span></div>
+    </div>
+  </div>`;
+
+document.getElementById('results').innerHTML = `
+  <div class="table-scroll"><table class="lw-table">
+    <thead><tr><th></th><th>Check</th><th>Got</th><th>Expected</th><th>±</th><th>Note</th></tr></thead>
+    <tbody>
+      ${results.map((r) => `
+        <tr>
+          <td style="color:${r.pass ? 'var(--good)' : 'var(--bad)'};font-weight:700">${r.pass ? 'PASS' : 'FAIL'}</td>
+          <td>${r.name}</td>
+          <td>${r.actual == null ? 'null' : Number(r.actual).toFixed(4)}</td>
+          <td>${Number(r.expected).toFixed(4)}</td>
+          <td class="muted">${r.tol}</td>
+          <td class="muted">${r.note}</td>
+        </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+
+console.log(`TESTS: ${passed} passed, ${failed} failed`);
+if (failed) console.warn('FAILURES:', results.filter((r) => !r.pass));
+</script>
+</body>
+</html>
