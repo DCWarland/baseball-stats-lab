@@ -40,8 +40,7 @@
 
   /* Paper grain. A little turbulence, kept faint enough to feel rather
    * than see — it is what stops large flat areas looking like a screen. */
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-  --grain-opacity: .05;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.09'/%3E%3C/svg%3E");
 }
 
 @media (prefers-color-scheme: dark) {
@@ -61,7 +60,6 @@
     --green-2: #7cc297;
     --navy:    #7fa8cf;
     --gold:    #c9a34e;
-    --grain-opacity: .07;
   }
 }
 
@@ -81,14 +79,26 @@
   --green-2: #7cc297;
   --navy:    #7fa8cf;
   --gold:    #c9a34e;
-  --grain-opacity: .07;
 }
 
 * { box-sizing: border-box; }
 
+/*
+ * The grain is a BACKGROUND LAYER on the body, blended into the paper colour —
+ * not an overlay element.
+ *
+ * An overlay would need every direct child of body lifted above it with a
+ * z-index, and that turns each of them into a stacking context. It silently
+ * traps the navigation drawer (z-index 40, inside .layout) beneath the scrim
+ * (z-index 39, a sibling of .layout), because the drawer's z-index is then
+ * scoped to its parent rather than to the page. background-blend-mode gets the
+ * same texture with no stacking consequences at all.
+ */
 body {
   margin: 0;
-  background: var(--paper);
+  background-color: var(--paper);
+  background-image: var(--grain);
+  background-blend-mode: multiply;
   color: var(--ink);
   font-family: var(--serif);
   font-size: 17.5px;
@@ -96,21 +106,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* The grain sits above the background and below everything else. */
-body::before {
-  content: '';
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image: var(--grain);
-  opacity: var(--grain-opacity);
-  mix-blend-mode: multiply;
-}
 /* On dark stock the grain has to lighten rather than darken. */
-:root[data-theme="dark"] body::before { mix-blend-mode: screen; }
+:root[data-theme="dark"] body { background-blend-mode: screen; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) body::before { mix-blend-mode: screen; }
+  :root:not([data-theme="light"]) body { background-blend-mode: screen; }
 }
-
-body > * { position: relative; z-index: 1; }
 
 a { color: var(--red); text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
@@ -440,22 +440,22 @@ thead .calc-col { background: var(--red); }
  * histogram, in the leaderboard, on the player card and in the team grid.
  */
 :root {
-  --t-elite:   #1f6236;
-  --t-great:   #4a854f;
-  --t-above:   #7d9a56;
-  --t-average: #a08e63;
-  --t-below:   #bb7738;
-  --t-poor:    #9c2b1b;
+  --t-elite:   #10492a;
+  --t-great:   #3f7d4f;
+  --t-above:   #8aad69;
+  --t-average: #9a9184;
+  --t-below:   #c37c31;
+  --t-poor:    #a3290f;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --t-elite: #57b581; --t-great: #78c08c; --t-above: #a3c07e;
-    --t-average: #b0a37f; --t-below: #d2914f; --t-poor: #dd7358;
+    --t-elite: #3ddc84; --t-great: #7ac795; --t-above: #b2ca8a;
+    --t-average: #a29a89; --t-below: #e0a05a; --t-poor: #f0705a;
   }
 }
 :root[data-theme="dark"] {
-  --t-elite: #57b581; --t-great: #78c08c; --t-above: #a3c07e;
-  --t-average: #b0a37f; --t-below: #d2914f; --t-poor: #dd7358;
+  --t-elite: #3ddc84; --t-great: #7ac795; --t-above: #b2ca8a;
+  --t-average: #a29a89; --t-below: #e0a05a; --t-poor: #f0705a;
 }
 
 .t-elite   { --tier: var(--t-elite); }
@@ -708,7 +708,38 @@ thead .calc-col { background: var(--red); }
 .team-grid thead th.col-name, .team-grid thead th.col-team { text-align: left; }
 .team-grid td { text-align: right; }
 .team-grid td.col-name, .team-grid td.col-team { text-align: left; }
-.team-grid .cell { background: color-mix(in srgb, var(--tier) 26%, transparent); color: var(--ink); font-weight: 700; }
+
+/*
+ * The player name column is pinned while the stats scroll under it. Scrolling
+ * a fifteen-column grid is useless if the name scrolls away too — you lose
+ * track of whose row you are reading.
+ *
+ * Sticky cells are transparent by default, so each one needs a background that
+ * matches its row, applied per row-stripe rather than inherited.
+ */
+.team-grid th.col-name, .team-grid td.col-name {
+  position: sticky; left: 0; z-index: 2;
+  box-shadow: 1px 0 0 var(--rule-2);
+  max-width: 9.5rem; overflow: hidden; text-overflow: ellipsis;
+}
+.team-grid thead th.col-name { z-index: 3; background: var(--ink-2); }
+.team-grid tbody tr:nth-child(odd) td.col-name { background: var(--paper); }
+.team-grid tbody tr:nth-child(even) td.col-name { background: var(--paper-2); }
+.team-grid tbody tr:hover td.col-name { background: var(--paper-3); }
+
+/* Hint that there is more table to the right, shown only where it can scroll. */
+.scroll-hint {
+  display: none; font-family: var(--sans); font-size: .7rem; color: var(--ink-2);
+  margin: 0; padding: .4rem .9rem; background: var(--paper-2);
+  border-bottom: 1px solid var(--rule); text-transform: uppercase; letter-spacing: .09em;
+}
+.team-grid .cell { font-weight: 700; }
+.team-grid .cell.t-elite   { background: var(--t-elite); color: #fff; }
+.team-grid .cell.t-great   { background: color-mix(in srgb, var(--t-elite) 42%, transparent); }
+.team-grid .cell.t-above   { background: color-mix(in srgb, var(--t-elite) 17%, transparent); }
+.team-grid .cell.t-average { background: none; font-weight: 400; color: var(--ink-2); }
+.team-grid .cell.t-below   { background: color-mix(in srgb, var(--t-below) 34%, transparent); }
+.team-grid .cell.t-poor    { background: var(--t-poor); color: #fff; }
 .team-grid .cell-unranked, .team-grid .cell-na { color: var(--ink-3); }
 
 /* =================================================================== home */
@@ -832,6 +863,23 @@ svg, img, table { max-width: 100%; }
 
   /* A 620px-tall scroll box is most of a phone screen. */
   .leaderboard .table-scroll { max-height: 68vh; }
+
+  /* Wide grids scroll sideways under a pinned name column — say so. */
+  .scroll-hint { display: block; }
+  .team-grid { font-size: .74rem; }
+  .team-grid th, .team-grid td { padding: .42rem .38rem; }
+  .team-grid th.col-name, .team-grid td.col-name { max-width: 7.5rem; }
+
+  /* The leaderboard's name column gets the same treatment. */
+  .lb-table th.col-name, .lb-table td.col-name {
+    position: sticky; left: 0; z-index: 2; box-shadow: 1px 0 0 var(--rule-2);
+    max-width: 8.5rem; overflow: hidden; text-overflow: ellipsis;
+  }
+  .lb-table thead th.col-name { z-index: 3; background: var(--ink-2); }
+  .lb-table tbody tr:nth-child(odd) td.col-name { background: var(--paper); }
+  .lb-table tbody tr:nth-child(even) td.col-name { background: var(--paper-2); }
+  .lb-table tbody tr:hover td.col-name,
+  .lb-table tbody tr.clickable:hover td.col-name { background: var(--paper-3); }
 }
 
 /*
@@ -865,6 +913,8 @@ svg, img, table { max-width: 100%; }
   .panel { margin-left: -1.1rem; margin-right: -1.1rem; border-left: 0; border-right: 0; box-shadow: none; }
   .stitch { margin: 1.6rem 0; }
 
+  /* Position is the least useful column when width is scarce. */
+  .team-grid .col-team { display: none; }
   .picker-search { max-width: none; min-width: 0; }
   .picker { gap: .45rem; }
   .pc-value { margin-left: 0; }

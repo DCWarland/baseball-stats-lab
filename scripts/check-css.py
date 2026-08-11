@@ -76,6 +76,26 @@ def main() -> int:
         if v.startswith('#') and not re.fullmatch(r'#[0-9a-fA-F]{3,8}', v):
             problems.append(f'{prop} has a malformed colour value: "{v}"')
 
+    # 2b. Stacking contexts -------------------------------------------------
+    # A z-index on a direct child of <body> makes that element a stacking
+    # context, which scopes every z-index inside it. That is how the nav drawer
+    # (inside .layout) ended up painting *beneath* its own scrim (a sibling of
+    # .layout) — invisible on a phone, and impossible to spot on a desktop.
+    if re.search(r'body\s*>\s*\*\s*\{[^}]*z-index', css):
+        problems.append('`body > *` sets a z-index — this creates a stacking '
+                        'context on .layout and traps the nav drawer under the scrim')
+
+    def z_of(selector: str):
+        m = re.search(re.escape(selector) + r'\s*\{[^}]*?z-index:\s*(-?\d+)', css, re.DOTALL)
+        return int(m.group(1)) if m else None
+
+    z_drawer, z_scrim, z_bar = z_of('.sidebar'), z_of('.nav-scrim'), z_of('.topbar')
+    if z_drawer is not None and z_scrim is not None and z_drawer <= z_scrim:
+        problems.append(f'.sidebar (z-index {z_drawer}) must sit above '
+                        f'.nav-scrim (z-index {z_scrim}) or the drawer opens behind the overlay')
+    if z_bar is not None and z_drawer is not None and z_bar <= z_drawer:
+        problems.append(f'.topbar (z-index {z_bar}) should stay above .sidebar (z-index {z_drawer})')
+
     # 3/4. Classes: emitted by JS vs styled in CSS ---------------------------
     js_text = '\n'.join(p.read_text() for p in ROOT.glob('js/**/*.js'))
     js_text += (ROOT / 'index.html').read_text()

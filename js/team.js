@@ -144,6 +144,7 @@ function gridTable(title, cols, rows, ref, minValue, minField) {
   return `
     <section class="panel">
       <div class="panel-head"><h2>${esc(title)}</h2><span class="panel-meta">sorted by playing time</span></div>
+      <p class="scroll-hint">Swipe the table sideways — the name column stays put →</p>
       <div class="table-scroll">
         <table class="data-table team-grid">
           <thead><tr>

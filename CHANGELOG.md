@@ -5,6 +5,34 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] - 2026-08-11
+
+### Fixed
+- **The mobile navigation drawer opened behind its own scrim.** The grain
+  texture was an overlay element, which required lifting every direct child of
+  `<body>` with `z-index: 1` — and that made `.layout` a stacking context,
+  scoping the drawer's `z-index: 40` to its parent. The scrim, a sibling of
+  `.layout`, then painted above the whole layout. The page greyed out and the
+  menu was unreachable behind it. The grain is now a blended background layer
+  on `<body>`, so no child needs a z-index and no stacking context is created.
+- **Tier colours in the team grid were indistinguishable.** Elite, Great and
+  Above average were three greens separated mainly by brightness, then drawn at
+  26% opacity, which compressed what little difference remained. Replaced with a
+  diverging ramp anchored on a *blank* Average cell — the eye now separates three
+  steps in each direction rather than six along one axis — and the two extremes
+  invert to white-on-colour so they are unmistakable. Base tier colours were
+  also re-spaced for real lightness separation.
+- **Team grids were unusable on phones.** They scrolled, but the player name
+  scrolled away with the stats, so you lost track of whose row you were reading.
+  The name column is now pinned while the stats scroll under it, on both the team
+  grid and the leaderboard, with a visible hint and the position column dropped
+  on the narrowest screens.
+
+### Added
+- `check-css.py` now guards stacking order: it fails if `body > *` sets a
+  z-index, if `.sidebar` does not sit above `.nav-scrim`, or if `.topbar` drops
+  below the drawer. Each guard was verified by reintroducing the bug it catches.
+
 ## [1.4.1] - 2026-08-11
 
 ### Fixed — mobile
