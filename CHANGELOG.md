@@ -5,6 +5,36 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-08-11
+
+### Fixed — mobile
+- **Charts were unreadable on phones.** The histogram used a fixed 760-unit
+  viewBox, which an SVG scales to fit its container — so on a 375px screen every
+  label rendered at 41% of its stated size, making the tier-band names 3.5px.
+  The viewBox now has four tiers (340 / 400 / 560 / 760) and the bin count drops
+  with it, keeping the smallest label at 8px or more from 320px to 1920px.
+  Charts also repaint on rotate.
+- **iOS Safari zoomed the page** whenever a form control was focused, because
+  every input was under 16px. All inputs and selects are now 16px at touch sizes.
+- **The navigation drawer could not be dismissed** except by following a link.
+  Added a scrim to tap, Escape to close, and close-on-navigate.
+- Touch targets enlarged on small screens (nav links, table rows, icon buttons).
+- Panels run edge to edge below 640px, reclaiming ~35px of width for tables.
+- Leaderboard scroll box capped at 68vh rather than a fixed 620px, which was
+  taller than many phone screens.
+- Filter controls, the player search and the club selector now fill the width
+  on small screens instead of sitting at fixed widths.
+
+### Added
+- Nine tests covering responsive chart sizing, including a model of the real
+  page layout that computes the rendered pixel size of the smallest chart label
+  at sixteen viewport widths and fails below 8px.
+
+### Note
+- `overflow-x: clip` is used rather than `hidden` on the body: `hidden` makes the
+  body a scroll container, which silently breaks `position: sticky` on the
+  masthead and sidebar.
+
 ## [1.4.0] - 2026-08-11
 
 ### Changed

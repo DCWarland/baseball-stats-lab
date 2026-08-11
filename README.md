@@ -289,6 +289,23 @@ because rate stats on tiny samples are noise.
 
 ---
 
+## Mobile
+
+Built for phones as well as desktops, with the awkward parts actually handled:
+
+- **Charts resize their viewBox**, not just their container. An SVG scales its
+  text along with everything else, so a fixed 760-unit chart on a 375px screen
+  renders its labels at 41% size. Four viewBox tiers keep the smallest label at
+  8px or more from 320px to 1920px, and the bin count drops with the width so
+  bars stay visible. Tested at sixteen widths by `run-tests.py`.
+- **Form controls are 16px at touch sizes** — below that, iOS Safari zooms the
+  whole page on focus and does not zoom back out.
+- **The nav drawer has a scrim**, closes on Escape, and closes on navigation.
+- **Panels run edge to edge below 640px**, reclaiming width for tables.
+- Wide tables scroll inside their own container; the page never scrolls sideways.
+
+---
+
 ## Design
 
 The look is a **1950s baseball annual**, not a web app.

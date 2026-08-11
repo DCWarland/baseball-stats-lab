@@ -389,10 +389,17 @@ function wireTheme() {
 
 function wireMenu() {
   const btn = document.getElementById('menu-toggle');
+  const close = () => document.body.classList.remove('nav-open');
+
   btn.addEventListener('click', () => document.body.classList.toggle('nav-open'));
+
+  // Three ways out of the drawer. Without them it is a trap on a phone.
+  document.querySelector('.nav-scrim')?.addEventListener('click', close);
   document.getElementById('sidebar').addEventListener('click', (e) => {
-    if (e.target.closest('a')) document.body.classList.remove('nav-open');
+    if (e.target.closest('a')) close();
   });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  window.addEventListener('hashchange', close);
 }
 
 /* --------------------------------------------------------------------- boot */

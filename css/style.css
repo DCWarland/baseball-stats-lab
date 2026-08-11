@@ -487,8 +487,8 @@ thead .calc-col { background: var(--red); }
 
 .tier-band { fill: var(--tier, var(--ink-3)); opacity: .13; }
 .tier-band-label {
-  font-family: var(--sans); font-size: 8.5px; fill: var(--ink-3);
-  text-transform: uppercase; letter-spacing: .12em;
+  font-family: var(--sans); font-size: 10px; fill: var(--ink-3);
+  text-transform: uppercase; letter-spacing: .1em;
 }
 .tier-edge { stroke: var(--rule-2); stroke-width: 1; opacity: .45; }
 
@@ -784,29 +784,94 @@ thead .calc-col { background: var(--red); }
 
 /* ============================================================ responsive */
 
+/* ============================================================ responsive */
+
+/* Nothing may ever push the page sideways. Wide content scrolls inside its own
+ * container; the body itself never does.
+ *
+ * `clip` rather than `hidden` deliberately: `overflow-x: hidden` turns the body
+ * into a scroll container, which silently breaks `position: sticky` on the
+ * masthead and the sidebar. `clip` trims overflow without that side effect.
+ * Browsers too old to know `clip` simply ignore the line, and nothing in the
+ * layout overflows anyway — this is a safety net, not a load-bearing rule. */
+html, body { max-width: 100%; }
+body { overflow-x: clip; }
+svg, img, table { max-width: 100%; }
+.table-scroll { -webkit-overflow-scrolling: touch; }
+
 @media (max-width: 1000px) {
   .layout { grid-template-columns: 1fr; }
   .sidebar {
     position: fixed; top: 3rem; left: 0; width: 272px; z-index: 40;
-    background: var(--paper); transform: translateX(-100%); transition: transform .15s;
+    background: var(--paper); transform: translateX(-100%); transition: transform .18s ease-out;
     border-right: 3px double var(--ink);
   }
   body.nav-open .sidebar { transform: translateX(0); }
+
+  /* A scrim behind the open drawer: it dims the page and, crucially, gives
+   * somewhere to tap to dismiss. Without it the drawer is a trap. */
+  .nav-scrim {
+    position: fixed; inset: 3rem 0 0; z-index: 39; background: var(--ink);
+    opacity: 0; visibility: hidden; transition: opacity .18s, visibility .18s;
+  }
+  body.nav-open .nav-scrim { opacity: .38; visibility: visible; }
+
   #menu-toggle { display: block; }
   .main { padding: 1.4rem 1.1rem 4rem; }
   .sandbox { grid-template-columns: 1fr; }
   .sandbox-controls { border-right: 0; border-bottom: 1px solid var(--rule); }
   .topnav { display: none; }
+
+  /* Comfortable touch targets. Apple's guideline is 44px; these get close
+   * without making the navigation absurdly tall. */
+  .nav-module li a { padding: .5rem .3rem; font-size: .82rem; }
+  .nav-module > summary { padding: .62rem .3rem; }
+  .icon-btn { padding: .42rem .62rem; font-size: 1rem; }
+  .lb-table tbody td, .team-grid tbody td { padding: .46rem .5rem; }
+  .picker-results button { padding: .58rem .6rem; }
+
+  /* A 620px-tall scroll box is most of a phone screen. */
+  .leaderboard .table-scroll { max-height: 68vh; }
+}
+
+/*
+ * iOS Safari zooms the whole page when you focus a form control smaller than
+ * 16px, and does not zoom back out. Every input and select therefore gets 16px
+ * on touch-sized screens — the one place where the type scale is not ours to
+ * choose.
+ */
+@media (max-width: 1000px) {
+  #search, .picker-search input, .lb-filter, .lb-team, .lb-tier,
+  .calc-field input, .calc-field select, .team-bar select, .sandbox-load select {
+    font-size: 16px;
+  }
+  .calc-field input, .calc-field select { padding: .3rem .35rem; }
 }
 
 @media (max-width: 640px) {
   body { font-size: 16.5px; }
   .brand-text, .badge { display: none; }
+  .brand-sub { display: none; }
   .lw-row { grid-template-columns: 6.4rem 1fr 3rem; }
   .lw-woba { display: none; }
   .slider-row { grid-template-columns: 6.2rem 1fr 2.4rem; }
-  .calc-out-value { font-size: 2rem; }
+  .calc-out-value { font-size: 2.1rem; }
   .col-chart, .databar { display: none; }
-  .panel-head { flex-direction: column; gap: .3rem; }
+  .panel-head { flex-direction: column; gap: .3rem; align-items: flex-start; }
   .prose > p:first-of-type::first-letter { font-size: 3em; }
+
+  /* Panels go edge to edge — a 1px border either side of a phone screen wastes
+   * width that the tables need. */
+  .panel { margin-left: -1.1rem; margin-right: -1.1rem; border-left: 0; border-right: 0; box-shadow: none; }
+  .stitch { margin: 1.6rem 0; }
+
+  .picker-search { max-width: none; min-width: 0; }
+  .picker { gap: .45rem; }
+  .pc-value { margin-left: 0; }
+  .pc-num { font-size: 1.7rem; }
+  .lb-filter { width: 100%; }
+  .lb-team, .lb-tier { max-width: none; flex: 1; }
+  .team-bar select { min-width: 0; width: 100%; }
+  .team-meta { margin-left: 0; }
+  .hero-actions .btn, .hero-actions .btn-secondary { flex: 1 1 auto; text-align: center; }
 }

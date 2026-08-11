@@ -16,6 +16,33 @@ import { fmt } from './formulas.js';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+/* ------------------------------------------------------------ dimensions */
+
+/**
+ * Chart dimensions for the current viewport.
+ *
+ * An SVG viewBox scales its contents to fit the container, and text scales with
+ * it. A 760-unit chart squeezed into a 310px phone renders every label at 41%
+ * of its stated size — a 10px tick becomes 4px, which is unreadable.
+ *
+ * The fix is to shrink the viewBox itself on narrow screens so the scale factor
+ * stays near 1:1, and to use fewer bins so the bars stay wide enough to see.
+ */
+export function chartMetrics(viewportWidth) {
+  const w = viewportWidth ?? (typeof window === 'undefined' ? 1200 : window.innerWidth);
+  const narrow = w < 700;
+  const width = w < 430 ? 340 : w < 700 ? 400 : w < 1000 ? 560 : 760;
+  const bins = w < 430 ? 16 : w < 700 ? 22 : w < 1000 ? 28 : 34;
+  return {
+    narrow,
+    histWidth: width,
+    histHeight: narrow ? 250 : 268,
+    bins,
+    scatterWidth: width,
+    scatterHeight: narrow ? 300 : 340,
+  };
+}
+
 /* ------------------------------------------------------------- statistics */
 
 export function quantile(sorted, q) {

@@ -24,7 +24,7 @@
 import * as F from './formulas.js';
 import { SCALES, RUN_EXPECTANCY, BASE_STATE_LABELS, PARK_FACTORS, POSITION_ADJUSTMENT, STABILISATION } from './constants.js';
 import { neighbours } from './content/index.js';
-import { histogram, percentileBar, percentileOf, describe, scatter, ordinal } from './charts.js';
+import { histogram, percentileBar, percentileOf, describe, scatter, ordinal, chartMetrics } from './charts.js';
 import { populationFor, minimumLabel } from './population.js';
 import { tierBands, tierLegend, tierFor } from './tiers.js';
 import { renderLeaderboard } from './leaderboard.js';
@@ -272,13 +272,31 @@ function renderDistributionAndBoard(stat, mount, calc) {
           <span class="tier-chip-range">${esc(t.range)}</span>
         </span>`).join('');
 
+    let lastPaint = { value: null, name: null };
+
     function paint(value, name) {
+      lastPaint = { value, name };
+      const m = chartMetrics();
       histHolder.innerHTML = histogram({
         values: pop.values, value, valueName: name ?? '',
         format: fmtStyle, lowerIsBetter: lower, label: stat.name, bands,
+        width: m.histWidth, height: m.histHeight, bins: m.bins,
       });
       pctHolder.innerHTML = value == null ? '' : percentileBar(percentileOf(value, s.sorted, lower));
     }
+
+    /* Rotating a phone changes the viewport enough to need a different viewBox.
+     * Debounced, and torn down when the user navigates away so listeners do not
+     * accumulate across page views. */
+    let resizeTimer;
+    const onResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (!document.body.contains(histHolder)) { window.removeEventListener('resize', onResize); return; }
+        paint(lastPaint.value, lastPaint.name);
+      }, 180);
+    };
+    window.addEventListener('resize', onResize);
 
     /* The player card: who he is, what he did, and where that ranks. This is
      * the "load any player and see their live stats" panel. */
@@ -491,6 +509,7 @@ function renderScatter(stat, slot) {
             points,
             xLabel: cfg.x.label, yLabel: cfg.y.label,
             xFormat: cfg.x.format ?? 'two', yFormat: cfg.y.format ?? 'two',
+            width: chartMetrics().scatterWidth, height: chartMetrics().scatterHeight,
           })}
         </section>`;
     })

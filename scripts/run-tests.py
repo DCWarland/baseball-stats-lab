@@ -40,6 +40,7 @@ def main() -> int:
         strip_modules((ROOT / 'js' / 'formulas.js').read_text()),
         strip_modules((ROOT / 'js' / 'tiers.js').read_text()),
         strip_modules((ROOT / 'js' / 'api.js').read_text()),
+        strip_modules((ROOT / 'js' / 'charts.js').read_text()),
         (ROOT / 'scripts' / 'assertions.js').read_text(),
     ]
     bundle = '\n'.join(parts)

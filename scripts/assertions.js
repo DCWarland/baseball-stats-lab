@@ -196,6 +196,50 @@ check('leadersUrl passes the group through',
 check('leadersUrl passes the limit through',
       urlAll.indexOf('limit=1500') > -1 ? 1 : 0, 1, 0);
 
+/* --- Responsive charts -----------------------------------------------------
+ * An SVG viewBox scales its text along with everything else. If the viewBox is
+ * much wider than the space it is drawn into, labels shrink below legibility.
+ * These checks model the real page layout and require the smallest label to
+ * render at 8 physical pixels or more at every width. */
+
+check('Desktop keeps the full-width chart', chartMetrics(1400).histWidth, 760, 0);
+check('Laptop narrows the viewBox', chartMetrics(900).histWidth, 560, 0);
+check('Tablet narrows it further', chartMetrics(600).histWidth, 400, 0);
+check('Small phone narrows it most', chartMetrics(375).histWidth, 340, 0);
+check('Phones use fewer bins so bars stay visible',
+      chartMetrics(375).bins < chartMetrics(1400).bins ? 1 : 0, 1, 0);
+check('narrow flag trips below 700px',
+      chartMetrics(699).narrow && !chartMetrics(701).narrow ? 1 : 0, 1, 0);
+
+var SMALLEST_LABEL = 10;   // .tier-band-label, in SVG user units
+
+/* Width actually available to a chart, following the real stylesheet:
+ *   >= 1000px  sidebar (272) + main max-width 64rem + 2.6rem padding
+ *   >=  640px  no sidebar, 1.1rem main padding
+ *   <   640px  panels run edge to edge
+ * then minus the chart's own .9rem padding on each side. */
+function contentPx(vw) {
+  var main = vw >= 1000 ? Math.min(vw - 272, 1024) - 83.2
+           : vw >= 640  ? vw - 35.2
+           : vw;
+  return main - 28.8;
+}
+
+function renderedLabelPx(vw) {
+  return (contentPx(vw) / chartMetrics(vw).histWidth) * SMALLEST_LABEL;
+}
+
+var WIDTHS = [320, 375, 390, 414, 430, 500, 600, 640, 700, 768, 900, 1000, 1100, 1280, 1440, 1920];
+var worst = 999, worstAt = 0;
+for (var wi = 0; wi < WIDTHS.length; wi++) {
+  var px = renderedLabelPx(WIDTHS[wi]);
+  if (px < worst) { worst = px; worstAt = WIDTHS[wi]; }
+}
+check('Smallest chart label stays >= 8px at every width',
+      worst >= 8 ? 1 : 0, 1, 0,
+      'worst is ' + worst.toFixed(1) + 'px at ' + worstAt + 'px wide');
+check('...and never balloons above 20px', worst < 20 ? 1 : 0, 1, 0);
+
 /* --- Formatting ----------------------------------------------------------- */
 check('fmt drops the leading zero', fmt(0.328, 'rate3') === '.328' ? 1 : 0, 1, 0);
 check('fmt handles null', fmt(null, 'rate3') === '—' ? 1 : 0, 1, 0);
